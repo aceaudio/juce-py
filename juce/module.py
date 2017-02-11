@@ -68,7 +68,7 @@ class Module(object):
 
         for key in self._declaration:
             if self._declaration[key] is None:
-                raise ValueError('Compulsory ' + str(key[:-1]) + ' value missing')
+                raise ValueError('Compulsory \'' + str(key[:-1]) + '\' value missing')
 
         if os.path.basename(path) != self.ID:
             raise ValueError('Module ID \'' + self.ID + '\' does not match module dirname \'' + os.path.basename(path) + '\'')
