@@ -3,6 +3,10 @@ import os
 
 
 def ismodule(path):
+    """
+    Returns:
+        bool: ``True`` if *path* is s directory containing a valid JUCE module.
+    """
     try:
         Module(path)
     except:
@@ -12,6 +16,13 @@ def ismodule(path):
 
 
 class Module(object):
+    """
+    Encapsulates a JUCE module, making it easy to read values from the module
+    header and set the version number.
+
+    Args:
+        path (str): The path to a directory containing a JUCE module.
+    """
     def __init__(self, path):
         self._path = path
         self._header = os.path.join(path, os.path.basename(path) + '.h')
@@ -102,7 +113,7 @@ class Module(object):
 
     @property
     def description(self):
-        """A description of the module"""
+        """A detailed description of the module"""
         return self._declaration['description:']
 
     @property
@@ -123,7 +134,7 @@ class Module(object):
     @property
     def searchpaths(self):
         """
-        An array of include paths, relative to the module's parent folder,
+        An array of include paths, relative to the module's parent directory,
         which need to be added to a project's header search path,
         """
         return self._declaration['searchpaths:'].split()
