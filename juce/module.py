@@ -3,10 +3,9 @@ import os
 
 
 def ismodule(path):
-    if not os.path.isdir(path):
-        return False
-
-    if not os.path.isfile(os.path.join(path, os.path.basename(path) + '.h')):
+    try:
+        Module(path)
+    except:
         return False
 
     return True
