@@ -59,32 +59,11 @@ class Module(object):
             if self._declaration[key] is None:
                 raise ValueError('Compulsory ' + str(key[:-1]) + ' value missing')
 
-    def _save(self):
-        didEnterDeclaration = False
+        if os.path.basename(path) != self.name:
+            raise ValueError('Module ID \'' + self.ID + '\' does not match dirname \'' + os.path.basename(path) + '\'')
 
-        with open(self._header) as file:
-            lines = file.readlines()
-
-        new_lines = []
-        for line in lines:
-            stripped_line = line.strip()
-
-            if stripped_line == self._end_declaration_key:
-                didEnterDeclaration = False
-
-            if didEnterDeclaration:
-                for key in self._declaration:
-                    if stripped_line.startswith(key):
-                        string_to_replace = stripped_line[len(key):].lstrip()
-                        if string_to_replace:
-                            line = line.replace(string_to_replace, self._declaration[key])
-            elif stripped_line == self._begin_declaration_key:
-                didEnterDeclaration = True
-
-            new_lines.append(line)
-
-            with open(self._header, 'w') as file:
-                file.writelines(new_lines)
+        if ' ' in self.vendor:
+            raise ValueError('Vendor contains whitespace')
 
     @property
     def path(self):
@@ -95,6 +74,11 @@ class Module(object):
     def ID(self):
         """A unique ID for the module"""
         return self._declaration['ID:']
+
+    @property
+    def id(self):
+        """A unique ID for the module"""
+        return self.ID
 
     @property
     def vendor(self):
@@ -183,3 +167,30 @@ class Module(object):
     def mingwlibs(self):
         """An array of mingw libraries that this module depends on"""
         return self.mingwLibs
+
+    def _save(self):
+        didEnterDeclaration = False
+
+        with open(self._header) as file:
+            lines = file.readlines()
+
+        new_lines = []
+        for line in lines:
+            stripped_line = line.strip()
+
+            if stripped_line == self._end_declaration_key:
+                didEnterDeclaration = False
+
+            if didEnterDeclaration:
+                for key in self._declaration:
+                    if stripped_line.startswith(key):
+                        string_to_replace = stripped_line[len(key):].lstrip()
+                        if string_to_replace:
+                            line = line.replace(string_to_replace, self._declaration[key])
+            elif stripped_line == self._begin_declaration_key:
+                didEnterDeclaration = True
+
+            new_lines.append(line)
+
+            with open(self._header, 'w') as file:
+                file.writelines(new_lines)
