@@ -56,12 +56,21 @@ class TsetModuleClass(unittest.TestCase):
         try:
             module = juce.Module(os.path.join(modules_dir, 'test_valid_module'))
         except IOError:
-            self.fail('Unexpected IOError')
+            self.fail('Unexpected IOError while loading a valid module')
         except ValueError:
-            self.fail('Unexpected ValueError')
+            self.fail('Unexpected ValueError while loading a valid module')
+        except:
+            self.fail('Unexpected error while loading a valid module')
         else:
             self.assertTrue(module.ID == 'test_valid_module')
             self.assertTrue(module.vendor == 'vendor')
             self.assertTrue(module.version == '1.0.0')
             self.assertTrue(module.name == 'name')
             self.assertTrue(module.description == 'description')
+            try:
+                module.version = '1.2.3'
+            except:
+                self.fail('Unexpected error setting the version number')
+            else:
+                self.assertTrue(module.version == '1.2.3')
+                module.version = '1.0.0'
