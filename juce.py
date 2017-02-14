@@ -82,10 +82,10 @@ class Module(object):
 
         for key in self._declaration:
             if self._declaration[key] is None:
-                raise ValueError('Compulsory \'' + str(key) + '\' value missing')
+                raise ValueError('Missing key: \'' + str(key) + '\'')
 
         if dirname != self.ID:
-            raise ValueError('Module ID \'' + self.ID + '\' does not match module dirname \'' + dirname + '\'')
+            raise ValueError('Module ID: \'' + self.ID + '\' does not match module dirname: \'' + dirname + '\'')
 
         if ' ' in self.vendor:
             raise ValueError('Vendor contains whitespace')
