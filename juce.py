@@ -74,7 +74,7 @@ class Module(object):
                 # inside the declaration section split
                 # lines into a key and a value
                 if ':' in line:
-                    key, value = line.split(':')
+                    key, value = line.split(':', 1)
 
                     # copy the value into the declaration dict
                     if key in self._declaration:
@@ -215,7 +215,7 @@ class Module(object):
             # each line into a key and a value
             if didEnterDeclaration:
                 if ':' in stripped_line:
-                    key, value = stripped_line.split(':')
+                    key, value = stripped_line.split(':', 1)
 
                     # replace the value with the corrsponding
                     # one stored in the declaration dict
