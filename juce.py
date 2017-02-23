@@ -3,6 +3,8 @@ import os
 import sys
 import subprocess
 
+from xml.etree import ElementTree
+
 
 def ismodule(path):
     """
@@ -417,3 +419,82 @@ class Projucer(object):
         subprocess.check_call([self.executable] + list(args))
         sys.stdout.flush()
         sys.stderr.flush()
+
+
+class Project(object):
+    def __init__(self, path, projucer):
+        self._path = os.path.abspath(path)
+
+        if isinstance(projucer, Projucer):
+            self._projucer = projucer
+        else:
+            self._projucer = Projucer(projucer)
+
+        self._xml = ElementTree.parse(path).getroot()
+        self._xml_restore_point = ElementTree.parse(path)
+
+    @property
+    def path(self):
+        return self._path
+
+    def __getattr__(self, name):
+        try:
+            return self._xml.attrib[name]
+        except KeyError:
+            raise AttributeError('\'Project\' object has no attribute \'' + name + '\'')
+
+    def exporters_of_type(self, exporter_type):
+        exporters = list()
+        for exporter in self.exporters():
+            if exporter.type == exporter_type:
+                exporters.append(exporter)
+        return exporters
+
+    @property
+    def exporters(self):
+        return [Exporter(self, exporter) for exporter in self._xml.find('EXPORTFORMATS')]
+
+    @property
+    def options(self):
+        return self._xml.find('JUCEOPTIONS').attrib
+
+
+class Exporter(object):
+    def __init__(self, project, exporter):
+        self._project_dir = os.path.dirname(project.path)
+        self._xml = exporter
+
+    @property
+    def type(self):
+        return self._xml.tag
+
+    def __getattr__(self, name):
+        return self._xml.attrib[name]
+
+    def configuration(self, name):
+        for config in self.get_configurations():
+            if config.name == name:
+                return config
+        raise ValueError('No configuration with name: \'' + name + '\'')
+
+    @property
+    def configurations(self):
+        return [Configuration(config) for config in self._xml.find('CONFIGURATIONS')]
+
+    @property
+    def modules(self):
+        modules = list()
+        for module in self._xml.find('MODULEPATHS'):
+            module_path = os.path.join(self._project_dir,
+                                       module.attrib['path'],
+                                       module.attrib['id'])
+            modules.append(Module(module_path))
+        return modules
+
+
+class Configuration(object):
+    def __init__(self, configuration):
+        self._xml = configuration
+
+    def __getattr__(self, name):
+        return self._xml.attrib[name]
