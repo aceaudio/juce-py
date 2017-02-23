@@ -31,7 +31,8 @@ class Module(object):
         self._header = os.path.join(self.path, dirname + '.h')
         self._begin_declaration_key = 'BEGIN_JUCE_MODULE_DECLARATION'
         self._end_declaration_key = 'END_JUCE_MODULE_DECLARATION'
-
+        self._config_key = 'Config:'
+        self._options = {}
         self._declaration = {
             'ID': None,
             'vendor': None,
@@ -61,24 +62,39 @@ class Module(object):
                     didEnterDeclaration = True
                     continue
 
-                # if we're not in the declaration section
-                # goto the next iteration of the loop
-                if not didEnterDeclaration:
+                if didEnterDeclaration:
+                    # if we find the end of the declaration, stop
+                    # reading, and goto the next iteration of the loop
+                    if line == self._end_declaration_key:
+                        didEnterDeclaration = False
+                        continue
+
+                    # inside the declaration section split lines into a key
+                    # and value pair splitting at the first occurance of ':'
+                    if ':' in line:
+                        key, value = line.split(':', 1)
+
+                        # copy the value into the declaration dictionary
+                        if key in self._declaration:
+                            self._declaration[key] = value.strip()
+
+                # if we find the declaration of an option add
+                # a default value to the options dictionary
+                elif line.startswith('/**') and self._config_key in line:
+                    key = line.split(self._config_key, 1)[1].strip()
+                    self._options[key] = None
                     continue
 
-                # if we find the end of the declaration
-                # section, finish the loop early
-                if line == self._end_declaration_key:
-                    break
+                # if we find a define read its name and value
+                elif line.startswith('#define'):
+                    define = line.split(None, 2)[1:]
 
-                # inside the declaration section split
-                # lines into a key and a value
-                if ':' in line:
-                    key, value = line.split(':', 1)
+                    # if the define has a value and the name is a key
+                    # in the options dictionary, store its value
+                    if len(define) == 2 and define[0] in self._options:
+                        self._options[define[0]] = define[1]
 
-                    # copy the value into the declaration dict
-                    if key in self._declaration:
-                        self._declaration[key] = value.strip()
+        self._options = {k: v for k, v in self._options.items() if v in ['0', '1']}
 
         for key in self._declaration:
             if self._declaration[key] is None:
@@ -195,6 +211,11 @@ class Module(object):
     def mingwlibs(self):
         """An array of mingw libraries that this module depends on"""
         return self.mingwLibs
+
+    @property
+    def options(self):
+        """Returns a dict of config options with default values"""
+        return self._options
 
     def _save(self):
         didEnterDeclaration = False

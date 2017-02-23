@@ -32,4 +32,10 @@ print('OSXFrameworks:   ' + ', '.join(module.OSXFrameworks))
 print('iOSFrameworks:   ' + ', '.join(module.iOSFrameworks))
 print('linuxLibs:       ' + ', '.join(module.linuxLibs))
 print('mingwLibs:       ' + ', '.join(module.mingwLibs))
+
+if module.options:
+    print('')
+    for option in module.options:
+        print(option + ': ' + module.options[option])
+
 print('')
