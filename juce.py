@@ -1,6 +1,7 @@
 
 import os
 import sys
+import copy
 import subprocess
 
 from xml.etree import ElementTree
@@ -289,6 +290,9 @@ class Projucer(object):
         Args:
             project_file (str): The path to a jucer project file.
         """
+        if isinstance(project_file, Project):
+            project_file = project_file.path
+
         self._call('--resave', project_file)
 
     def resave_resources(self, project_file):
@@ -298,6 +302,9 @@ class Projucer(object):
         Args:
             project_file (str): The path to a jucer project file.
         """
+        if isinstance(project_file, Project):
+            project_file = project_file.path
+
         self._call('--resave-resources', project_file)
 
     def set_version(self, version_number, project_file):
@@ -308,6 +315,9 @@ class Projucer(object):
             project_file (str): The path to a jucer project file.
             version_number (str): The version number to set the project to.
         """
+        if isinstance(project_file, Project):
+            project_file = project_file.path
+
         self._call('--set-version', version_number, project_file)
 
     def bump_version(self, project_file):
@@ -317,6 +327,9 @@ class Projucer(object):
         Args:
             project_file (str): The path to a jucer project file.
         """
+        if isinstance(project_file, Project):
+            project_file = project_file.path
+
         self._call('--bump-version', project_file)
 
     def git_tag_version(self, project_file):
@@ -327,6 +340,9 @@ class Projucer(object):
         Args:
             project_file (str): The path to a jucer project file.
         """
+        if isinstance(project_file, Project):
+            project_file = project_file.path
+
         self._call('--git-tag-version', project_file)
 
     def build_module(self, target_dir, module_dir):
@@ -422,28 +438,30 @@ class Projucer(object):
 
 
 class Project(object):
-    def __init__(self, path, projucer):
+    """
+    Encapsulates all the details of a Projucer project file.
+
+    Args:
+        path (str): The path to the Projucer project file.
+    """
+    def __init__(self, path):
         self._path = os.path.abspath(path)
-
-        if isinstance(projucer, Projucer):
-            self._projucer = projucer
-        else:
-            self._projucer = Projucer(projucer)
-
-        self._xml = ElementTree.parse(path).getroot()
-        self._xml_restore_point = ElementTree.parse(path)
-
-    @property
-    def path(self):
-        return self._path
+        self._name = os.path.basename(path)
+        self.reload()
 
     def __getattr__(self, name):
         try:
             return self._xml.attrib[name]
         except KeyError:
-            raise AttributeError('\'Project\' object has no attribute \'' + name + '\'')
+            raise AttributeError('\'' + self._name + '\' has no attribute \'' + name + '\'')
+
+    @property
+    def path(self):
+        """The full path to the Projucer project file."""
+        return self._path
 
     def exporters_of_type(self, exporter_type):
+        """A list of exporters matching `exporter_type`."""
         exporters = list()
         for exporter in self.exporters():
             if exporter.type == exporter_type:
@@ -452,26 +470,72 @@ class Project(object):
 
     @property
     def exporters(self):
+        """A list of exporters."""
         return [Exporter(self, exporter) for exporter in self._xml.find('EXPORTFORMATS')]
 
     @property
     def options(self):
+        """A dictionary of options."""
         return self._xml.find('JUCEOPTIONS').attrib
+
+    def save(self, projucer=None):
+        """
+        Saves the xml project file to disk. If the `projucer` argument is
+        present all files and resources will be regenerated.
+
+        Args:
+            projucer: The path to the Projucer executable binary or app bundle
+                on mac, or a `Projucer` object.
+        """
+        self._tree.write(self.path)
+
+        if projucer:
+            if not isinstance(projucer, Projucer):
+                projucer = Projucer(projucer)
+
+            projucer.resave(self.path)
+
+    def reset(self):
+        """
+        Resets the project file on disk to the state it was in when this object
+        was created or `reload()` was last called.
+        """
+        self._tree = copy.deepcopy(self._tree_restore_point)
+        self._tree.write(self.path)
+
+    def reload(self):
+        """
+        Loads the project file from disk into this object.
+        """
+        self._tree = ElementTree.parse(self.path)
+        self._tree_restore_point = ElementTree.parse(self.path)
+        self._xml = self._tree.getroot()
 
 
 class Exporter(object):
+    """
+    Encapsulates all the details of an exporter contained within a Projucer
+    project file.
+
+    Args:
+        project (Project): The project that contains this exporter.
+
+        exporter: The xml element that decribes this exporter.
+    """
     def __init__(self, project, exporter):
         self._project_dir = os.path.dirname(project.path)
         self._xml = exporter
 
-    @property
-    def type(self):
-        return self._xml.tag
-
     def __getattr__(self, name):
         return self._xml.attrib[name]
 
+    @property
+    def format(self):
+        """Indicates the format of this exporter."""
+        return self._xml.tag
+
     def configuration(self, name):
+        """Returns a configuration in this exporter matching `name`."""
         for config in self.get_configurations():
             if config.name == name:
                 return config
@@ -479,10 +543,12 @@ class Exporter(object):
 
     @property
     def configurations(self):
+        """Returns all configurations in this exporter."""
         return [Configuration(config) for config in self._xml.find('CONFIGURATIONS')]
 
     @property
     def modules(self):
+        """Returns all the modules in this exporter."""
         modules = list()
         for module in self._xml.find('MODULEPATHS'):
             module_path = os.path.join(self._project_dir,
@@ -493,6 +559,13 @@ class Exporter(object):
 
 
 class Configuration(object):
+    """
+    Encapsulates all the details of a Configuarion contained within an Exporter
+    of a Projucer project file.
+
+    Args:
+        configuration: The xml element that decribes this configuration.
+    """
     def __init__(self, configuration):
         self._xml = configuration
 
