@@ -10,7 +10,7 @@ from xml.etree import ElementTree
 def ismodule(path):
     """
     Returns:
-        bool: ``True`` if *path* is a directory containing a valid JUCE module.
+        bool: **True** if *path* is a directory containing a valid JUCE module.
     """
     try:
         Module(path)
@@ -394,7 +394,7 @@ class Projucer(object):
         Scans the given folder for C/C++ source files, and normalises any
         juce-style comment division lines.
 
-        (i.e. any lines that look like ``//=====`` or ``//-----`` or ``///////``
+        (i.e. any lines that look like **//=====** or **//-----** or **///////**
         will be replaced)
 
         Args:
@@ -480,12 +480,12 @@ class Project(object):
 
     def save(self, projucer=None):
         """
-        Saves the xml project file to disk. If the `projucer` argument is
+        Saves the xml project file to disk. If the *projucer* argument is
         present all files and resources will be regenerated.
 
         Args:
             projucer: The path to the Projucer executable binary or app bundle
-                on mac, or a `Projucer` object.
+                on mac, or a *Projucer* object.
         """
         self._tree.write(self.path)
 
@@ -498,7 +498,7 @@ class Project(object):
     def reset(self):
         """
         Resets the project file on disk to the state it was in when this object
-        was created or `reload()` was last called.
+        was created or *reload()* was last called.
         """
         self._tree = copy.deepcopy(self._tree_restore_point)
         self._tree.write(self.path)
